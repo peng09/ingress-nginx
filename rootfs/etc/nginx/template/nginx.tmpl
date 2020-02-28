@@ -474,7 +474,7 @@ http {
     server {
         server_name {{ $redirect.From }};
 
-        {{ buildHTTPListener  $all $redirect.From }}
+        {{ buildHTTPListener  $all $redirect.From false }}
         {{ buildHTTPSListener $all $redirect.From }}
 
         ssl_certificate_by_lua_block {
@@ -781,7 +781,7 @@ stream {
         {{ $all := .First }}
         {{ $server := .Second }}
 
-        {{ buildHTTPListener  $all $server.Hostname }}
+        {{ buildHTTPListener  $all $server.Hostname $server.HTTP2InsecurePort }}
         {{ buildHTTPSListener $all $server.Hostname }}
 
         set $proxy_upstream_name "-";

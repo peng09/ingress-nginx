@@ -1106,7 +1106,7 @@ func shouldLoadModSecurityModule(c interface{}, s interface{}) bool {
 	return false
 }
 
-func buildHTTPListener(t interface{}, s interface{}) string {
+func buildHTTPListener(t interface{}, s interface{}, h interface{}) string {
 	var out []string
 
 	tc, ok := t.(config.TemplateConfig)
@@ -1121,6 +1121,12 @@ func buildHTTPListener(t interface{}, s interface{}) string {
 		return ""
 	}
 
+	http2InsecurePort, ok := h.(bool)
+	if !ok {
+		klog.Errorf("expected a 'bool' type but %T was returned", h)
+		return ""
+	}
+
 	addrV4 := []string{""}
 	if len(tc.Cfg.BindAddressIpv4) > 0 {
 		addrV4 = tc.Cfg.BindAddressIpv4
@@ -1128,7 +1134,7 @@ func buildHTTPListener(t interface{}, s interface{}) string {
 
 	co := commonListenOptions(tc, hostname)
 
-	out = append(out, httpListener(addrV4, co, tc)...)
+	out = append(out, httpListener(addrV4, co, tc, http2InsecurePort)...)
 
 	if !tc.IsIPV6Enabled {
 		return strings.Join(out, "\n")
@@ -1139,7 +1145,7 @@ func buildHTTPListener(t interface{}, s interface{}) string {
 		addrV6 = tc.Cfg.BindAddressIpv6
 	}
 
-	out = append(out, httpListener(addrV6, co, tc)...)
+	out = append(out, httpListener(addrV6, co, tc, http2InsecurePort)...)
 
 	return strings.Join(out, "\n")
 }
@@ -1206,7 +1212,7 @@ func commonListenOptions(template config.TemplateConfig, hostname string) string
 	return strings.Join(out, " ")
 }
 
-func httpListener(addresses []string, co string, tc config.TemplateConfig) []string {
+func httpListener(addresses []string, co string, tc config.TemplateConfig, http2InsecurePort bool) []string {
 	out := make([]string, 0)
 	for _, address := range addresses {
 		l := make([]string, 0)
@@ -1219,6 +1225,11 @@ func httpListener(addresses []string, co string, tc config.TemplateConfig) []str
 		}
 
 		l = append(l, co)
+
+		if http2InsecurePort {
+			l = append(l, "http2")
+		}
+
 		l = append(l, ";")
 		out = append(out, strings.Join(l, " "))
 	}
